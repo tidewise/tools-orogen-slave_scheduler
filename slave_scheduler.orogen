@@ -1,0 +1,25 @@
+name "slave_scheduler"
+
+import_types_from 'slave_schedulerTypes.hpp'
+
+# Base functionality for all slave scheduling tasks
+task_context 'BaseTask' do
+    needs_configuration
+    abstract
+end
+
+# Scheduling task that process its slaves in order
+#
+# The slaves need to be attached to it as peers, and a partial order must be
+# provided in the scheduling_order property. The task will, in its updateHook,
+# process the children in said order, placing the rest at the end of the list.
+task_context 'OrderedSchedulingTask' do
+    subclasses 'slave_scheduler::BaseTask'
+    needs_configuration
+
+    # The scheduling order. Unmentioned peers go at the end of the order
+    property 'scheduling_order', '/std/vector</std/string>'
+
+    periodic 0.1
+end
+
