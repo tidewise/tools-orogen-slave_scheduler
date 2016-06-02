@@ -4,6 +4,7 @@
 #define SLAVE_SCHEDULER_ORDEREDSCHEDULINGTASK_TASK_HPP
 
 #include "slave_scheduler/OrderedSchedulingTaskBase.hpp"
+#include <vector>
 
 namespace slave_scheduler{
 
@@ -28,9 +29,9 @@ process the children in said order, placing the rest at the end of the list.
     class OrderedSchedulingTask : public OrderedSchedulingTaskBase
     {
 	friend class OrderedSchedulingTaskBase;
+
     protected:
-
-
+        std::vector<TaskContext*> scheduling_order;
 
     public:
         /** TaskContext constructor for OrderedSchedulingTask
