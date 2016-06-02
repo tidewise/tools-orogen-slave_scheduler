@@ -45,7 +45,12 @@ bool OrderedSchedulingTask::configureHook()
     for (PeerList::const_iterator it = peers.begin(); it != peers.end(); it++)
     {
         if (find(scheduling_order.begin(), scheduling_order.end(), *it) == scheduling_order.end())
-            scheduling_order.push_back(*it);
+        {
+            Logger::log(Logger::Error) << "OrderedSchedulingTask error: component '" << *it
+                << "' is a peer not specified in the scheduling order"
+                << RTT::endlog();
+            return false;
+        }
     }
 
     // Then resolve the names
