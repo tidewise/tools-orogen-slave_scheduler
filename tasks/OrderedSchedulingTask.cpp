@@ -97,6 +97,7 @@ void OrderedSchedulingTask::updateHook()
 }
 void OrderedSchedulingTask::errorHook()
 {
+    OrderedSchedulingTask::updateHook();
     OrderedSchedulingTaskBase::errorHook();
 }
 void OrderedSchedulingTask::stopHook()

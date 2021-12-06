@@ -1,20 +1,41 @@
+# frozen_string_literal: true
+
 name "slave_scheduler"
 
-import_types_from 'slave_schedulerTypes.hpp'
+import_types_from "slave_schedulerTypes.hpp"
 
 # Scheduling task that process its slaves in order
 #
 # The slaves need to be attached to it as peers, and a partial order must be
 # provided in the scheduling_order property. The task will, in its updateHook,
 # process the children in said order, placing the rest at the end of the list.
-task_context 'OrderedSchedulingTask' do
+task_context "OrderedSchedulingTask" do
     needs_configuration
 
     # The scheduling order. Unmentioned peers go at the end of the order
-    property 'scheduling_order', '/std/vector</std/string>'
+    property "scheduling_order", "/std/vector</std/string>"
 
-    error_states 'TRIGGER_FAILED'
+    error_states "TRIGGER_FAILED"
 
     periodic 0.1
 end
 
+# Test task that waits for a value on input to return from updateHook
+#
+# It forwards the value on its output
+task_context "test::BusyWaitTask" do
+    needs_configuration
+
+    input_port "in", "int"
+    output_port "out", "int"
+end
+
+unless namespace_disabled?("test")
+    deployment "ordered_scheduling_test" do
+        scheduler = task "scheduler", "slave_scheduler::OrderedSchedulingTask"
+        task("a", "slave_scheduler::test::BusyWaitTask")
+            .slave_of(scheduler)
+        task("b", "slave_scheduler::test::BusyWaitTask")
+            .slave_of(scheduler)
+    end
+end
