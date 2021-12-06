@@ -19,3 +19,23 @@ task_context "OrderedSchedulingTask" do
 
     periodic 0.1
 end
+
+# Test task that waits for a value on input to return from updateHook
+#
+# It forwards the value on its output
+task_context "test::BusyWaitTask" do
+    needs_configuration
+
+    input_port "in", "int"
+    output_port "out", "int"
+end
+
+unless namespace_disabled?("test")
+    deployment "ordered_scheduling_test" do
+        scheduler = task "scheduler", "slave_scheduler::OrderedSchedulingTask"
+        task("a", "slave_scheduler::test::BusyWaitTask")
+            .slave_of(scheduler)
+        task("b", "slave_scheduler::test::BusyWaitTask")
+            .slave_of(scheduler)
+    end
+end
