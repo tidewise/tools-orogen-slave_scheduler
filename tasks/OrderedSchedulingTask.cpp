@@ -83,15 +83,18 @@ void OrderedSchedulingTask::updateHook()
     {
         if (!scheduling_order[i]->update())
         {
-            Logger::log(Logger::Error)
-                << "OrderedSchedulingTask error: failed to trigger component #" << i
-                << " '" << scheduling_order[i]->getName() << "'" << RTT::endlog();
-            error(TRIGGER_FAILED);
+            if (state() != TRIGGER_FAILED) {
+                Logger::log(Logger::Error)
+                    << "OrderedSchedulingTask error: failed to trigger component #" << i
+                    << " '" << scheduling_order[i]->getName() << "'" << RTT::endlog();
+                error(TRIGGER_FAILED);
+            }
             has_error = true;
         }
     }
-    if (!has_error && state() == TRIGGER_FAILED)
+    if (!has_error && state() == TRIGGER_FAILED) {
         report(RUNNING);
+    }
 
     OrderedSchedulingTaskBase::updateHook();
 }

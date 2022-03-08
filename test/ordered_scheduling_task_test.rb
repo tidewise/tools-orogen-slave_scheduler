@@ -5,6 +5,14 @@ using_task_library "slave_scheduler"
 describe OroGen.slave_scheduler.OrderedSchedulingTask do
     run_live
 
+    before do
+        Syskit.conf.opportunistic_recovery_from_quarantine = false
+    end
+
+    after do
+        Syskit.conf.opportunistic_recovery_from_quarantine = true
+    end
+
     describe "configure" do
         attr_reader :task
 
@@ -49,7 +57,11 @@ describe OroGen.slave_scheduler.OrderedSchedulingTask do
         after do
             if b_task.fatal_error?
                 expect_execution { a_task.execution_agent.kill! }
-                    .to { emit a_task.aborted_event }
+                    .to do
+                        emit a_task.aborted_event
+                        emit scheduler_task.aborted_event
+                        emit a_task.execution_agent.kill_event
+                    end
             end
         end
 
@@ -82,6 +94,8 @@ describe OroGen.slave_scheduler.OrderedSchedulingTask do
             syskit_configure_and_start(a_task)
             syskit_configure_and_start(b_task)
 
+            plan.add_permanent_task(scheduler_task)
+
             # Make 'b' go into FATAL so that we exit the scheduler's loop and
             # 'a' is next to be scheduled
             expect_execution do
@@ -95,6 +109,33 @@ describe OroGen.slave_scheduler.OrderedSchedulingTask do
 
             expect_execution { syskit_write a_task.in_port, 11 }.timeout(0.5).to do
                 have_one_new_sample a_task.out_port
+            end
+        end
+
+        it "does not emit TRIGGER_FAILED when already in that state" do
+            scheduler_task.properties.scheduling_order = %w[a b]
+
+            syskit_configure_and_start(scheduler_task)
+            syskit_configure_and_start(a_task)
+            syskit_configure_and_start(b_task)
+
+            # Make 'b' go into FATAL so that we exit the scheduler's loop and
+            # 'a' is next to be scheduled
+            expect_execution do
+                syskit_write a_task.in_port, 10
+                syskit_write b_task.in_port, 42
+            end.to do
+                emit b_task.fatal_error_event
+                emit scheduler_task.trigger_failed_event
+            end
+
+            expect_execution.to do
+                poll do
+                    # Needed to actually trigger
+                    syskit_write a_task.in_port, 11
+                end
+                not_emit scheduler_task.trigger_failed_event, within: 5
+                not_emit scheduler_task.running_event, within: 5
             end
         end
     end
